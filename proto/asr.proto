@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package asr;
+
+service ASR {
+  rpc StreamAudio(stream AudioChunk) returns (stream ASRResponse);
+}
+
+message AudioChunk {
+  bytes audio_chunk = 1;
+}
+
+message ASRResponse {
+  float start_ts = 1;
+  float end_ts = 2;
+  string sentence = 3;
+}
