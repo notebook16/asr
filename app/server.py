@@ -33,6 +33,8 @@ class ASRService(asr_pb2_grpc.ASRServicer):
         for request in request_iterator:
             chunk_count += 1
             chunk = request.audio_chunk
+            if chunk_count == 1 or chunk_count % 50 == 0:
+                print(f"[ASR] gRPC chunk #{chunk_count} len={len(chunk) if chunk else 0}")
             if chunk:
                 result = session.streaming_asr.process_audio_chunk(bytes(chunk))
                 if result:
