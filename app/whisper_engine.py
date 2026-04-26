@@ -1,18 +1,26 @@
 """
 Whisper-based speech recognition engine.
-Model config fixed for VAD-based streaming (tiny, int8, cpu_threads=4).
+Model config tuned for low-CPU streaming.
 """
 
 from faster_whisper import WhisperModel
 import numpy as np
+import os
 
+MODEL_SIZE = os.getenv("ASR_MODEL_SIZE", "base.en")
+CPU_THREADS = int(os.getenv("ASR_CPU_THREADS", "2"))
+BEAM_SIZE = int(os.getenv("ASR_BEAM_SIZE", "2"))
+BEST_OF = int(os.getenv("ASR_BEST_OF", "2"))
+LANGUAGE = os.getenv("ASR_LANGUAGE", "en")
 model = WhisperModel(
-    "tiny",
+    MODEL_SIZE,
     device="cpu",
     compute_type="int8",
-    cpu_threads=4,
+    cpu_threads=CPU_THREADS,
 )
-print("[Whisper] Model loaded (tiny, int8, cpu_threads=4) — ready")
+print(
+    f"[Whisper] Model loaded ({MODEL_SIZE}, int8, cpu_threads={CPU_THREADS}, beam_size={BEAM_SIZE}, best_of={BEST_OF}) — ready"
+)
 
 
 def transcribe(audio_bytes):
@@ -21,12 +29,17 @@ def transcribe(audio_bytes):
     audio_np = audio_np.astype(np.float32) / 32768.0
     segments, _ = model.transcribe(
         audio_np,
-        language="en",
-        beam_size=1,
-        best_of=1,
+        language=LANGUAGE,
+        beam_size=BEAM_SIZE,
+        best_of=BEST_OF,
         temperature=0.0,
-        condition_on_previous_text=True,
+        # Disable long-context carry-over for chunked streaming stability.
+        condition_on_previous_text=False,
         vad_filter=True,
+        vad_parameters={
+            "min_silence_duration_ms": 350,
+            "speech_pad_ms": 180,
+        },
         word_timestamps=True,
     )
     results = []

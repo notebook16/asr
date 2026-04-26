@@ -36,12 +36,12 @@ class ASRService(asr_pb2_grpc.ASRServicer):
             if chunk_count == 1 or chunk_count % 50 == 0:
                 print(f"[ASR] gRPC chunk #{chunk_count} len={len(chunk) if chunk else 0}")
             if chunk:
-                result = session.streaming_asr.process_audio_chunk(bytes(chunk))
-                if result:
+                results = session.streaming_asr.process_audio_chunk(bytes(chunk))
+                for result in results:
                     text = result["text"]
                     start_ts = result["startTs"]
                     end_ts = result["endTs"]
-                    print(f"[ASR] 📤 utterance: {text[:60]}... startTs={start_ts} endTs={end_ts}")
+                    print(f"[ASR] 📤 segment: {text[:60]}... startTs={start_ts} endTs={end_ts}")
                     yield asr_pb2.ASRResponse(
                         start_ts=float(start_ts),
                         end_ts=float(end_ts),
